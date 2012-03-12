@@ -266,7 +266,7 @@ function ajax()
 document.writeln('<div id="gb-progress" style="visibility:hidden; position:absolute; left:0px; top:0px; width:100%; height:100%; z-index:200; opacity:0.85; background-color:#AAAAAA">\
                      <div style="position:absolute; top:50%; width:100%; font-family:verdana; font-weight:bold; color:#0000CC" align="center">\
                         <div style="position:relative; top:-20px; font-size:20px">\
-                           Solving the Guestbook Proof-of-Work challenge:\
+                           Please Wait ...\
                         </div>\
                         <div style="position:relative; top:10px; width:300px; height:30px; border-style:solid; border-width:3px; border-color:#0000CC" align="left">\
                            <div id="gb-progress-bar" style="position:relative; left:0px; top:0px; width:0%; height:100%; background-color:#0000FF">\

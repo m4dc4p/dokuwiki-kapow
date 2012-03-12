@@ -57,8 +57,7 @@ class action_plugin_kapow extends DokuWiki_Action_Plugin {
       generatePuzzle($Dc, $Nc, $ip);
     }
 
-    private function verifyPuzzle($answer) {
-      $this->getPuzzle($Dc, $Nc);
+    private function verifyPuzzle($Dc, $Nc, $answer) {
       return gb_Verify($Dc, $Nc, $answer);
     }
 
@@ -88,13 +87,15 @@ class action_plugin_kapow extends DokuWiki_Action_Plugin {
           <input type="hidden" value="{$_REQUEST['changecheck']}" name="changecheck">
           <input type="hidden" value="{$_REQUEST['target']}" name="target">
           <input type="hidden" name="wikitext" value="{$wikitext}">
-          <input type="hidden" value="2" name="kapow" id="kapow">
+          <input type="hidden" name="kapow" id="kapow">
+          <input type="hidden" name="Dc" value="{$Dc}">
+          <input type="hidden" name="Nc" value="{$Nc}">
           <input type="hidden" value="Save" name="do[save]">
           <!-- input type="submit" value="Save" name="do[save]"-->
           <input type="hidden" value="{$_REQUEST['summary']}" name="summary" id="edit__summary">
           <script type="text/javascript">
-          gb_Solve({ Nc: "{$Nc}", 
-                     Dc: "{$Dc}", 
+          gb_Solve({ Nc: {$Nc}, 
+                     Dc: {$Dc}, 
                      onsolved: function (val) { alert('got val: ' + val); 
                        jQuery('#kapow').val(val); 
                        jQuery('#dw__editform').submit(); }});
@@ -115,7 +116,7 @@ HTML;
       if((is_array($ACT) && array_key_exists("save", $ACT)) || $ACT == 'save') {
         trigger_error("array_key_exists('kapow', _REQUEST): ". array_key_exists('kapow', $_REQUEST));
         if(array_key_exists('kapow', $_REQUEST)) {
-          if($this->verifyPuzzle($_REQUEST['kapow'])) {
+          if($this->verifyPuzzle($_REQUEST['Dc'], $_REQUEST['Nc'], $_REQUEST['kapow'])) {
             trigger_error("action_act_confirm: valid kapow.");
           }
           else {

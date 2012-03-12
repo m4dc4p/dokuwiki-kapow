@@ -8,11 +8,15 @@
     {
         if ($Dc > 1)
         {
+            trigger_error("Nc: " . $Nc . ", Dc: " . $Dc . ", A: " . $A);
             $str = pack("N*", intval($Nc), intval($Dc), intval($A) );
+            trigger_error("str: " . $str);
             $output = sha1($str);//hash
+            trigger_error("output: " . $output);
             $output2 = hexdec(substr($output, -8));//hex to dec last 8 numbers
+            trigger_error("output2: " . $output2);
             $verify = bcmod((string)$output2, (string)$Dc);
-            trigger_error("verified: " . $verify);
+            trigger_error("verify: " . $verify);
             return $verify === "0" ? true : false;//ok or not
         }
         return true;
@@ -61,8 +65,8 @@
 
     function generatePuzzle(&$Dc, &$Nc, $ip)
     {
-        $score = 0.0;
-        $check = 2; //checkBL($ip) + 1.0;
+        $score = 2.0;
+        $check = 1; // checkBL($ip) + 1.0;
         // get difficulty level
         $Dc = $check*round(pow(0x80, $score)); //0x80 = hex of 128
         // Nc
