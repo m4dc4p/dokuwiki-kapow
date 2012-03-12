@@ -1,7 +1,8 @@
 base   kapow
-author Justin
-email  foo@bar.com
+author Justin Bailey
+email  jgbailey@gmail.com
 date   2012-01-18
-name   kapow plugin
-desc   Some plugin
-url    http://foo.bar.com
+name   kaPoW plugin
+desc   This plugin implements a Proof-of-Work spam check for wiki editing. 
+       Based on the work of Tien Le, Ed Kaiser, Wu-chang Feng, Portland State University (http://www.thefengs.com/wuchang/work/)
+url    https://github.com/m4dc4p/dokuwiki-kapow
