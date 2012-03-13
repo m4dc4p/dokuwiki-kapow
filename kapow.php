@@ -74,13 +74,16 @@
    }
 
 
-    function generatePuzzle(&$Dc, &$Nc, $ip)
+    function generatePuzzle($score, &$Dc, &$Nc)
     {
-        $score = 30;
-        $check = checkBL($ip) + 1.0;
-        // get difficulty level
-        $Dc = $check*round(pow(0x80, $score)); //0x80 = hex of 128
-        // Nc
-        $Nc = get_Nc($ip);
+      if (isset($_SERVER['HTTP_X_FORWARDED_FOR']) && eregi("^[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}$",$_SERVER['HTTP_X_FORWARDED_FOR']))
+        $ip = $_SERVER['HTTP_X_FORWARDED_FOR'];
+      else
+        $ip = $_SERVER['REMOTE_ADDR'];
+
+      // get difficulty level
+      $Dc = round(pow(0x80, $score)); //0x80 = hex of 128
+      // Nc
+      $Nc = get_Nc($ip);
     }
 ?>
