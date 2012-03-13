@@ -37,28 +37,89 @@ require_once DOKU_PLUGIN.'action.php';
 require_once DOKU_PLUGIN.'kapow/kapow.php';
 
 class action_plugin_kapow extends DokuWiki_Action_Plugin {
+    public $debug_score = array();
 
     public function register(Doku_Event_Handler &$controller) {
       $controller->register_hook('ACTION_ACT_PREPROCESS', 'BEFORE', $this, 'action_act_check');
-      $controller->register_hook('TPL_ACT_UNKNOWN', 'BEFORE', $this, 'render_kapow');
       $controller->register_hook('TPL_METAHEADER_OUTPUT', 'BEFORE', $this, 'add_kapow');
+      $controller->register_hook('HTML_EDITFORM_OUTPUT', 'BEFORE', $this, 'add_pow');
+      
     }
 
     private function getPuzzle(&$Dc, &$Nc) {
-      if (isset($_SERVER['HTTP_X_FORWARDED_FOR']) && eregi("^[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}$",$_SERVER['HTTP_X_FORWARDED_FOR']))
-      {
-        $ip = $_SERVER['HTTP_X_FORWARDED_FOR'];
-      }
-      else
-      {
-        $ip = $_SERVER['REMOTE_ADDR'];
-      }
-
-      generatePuzzle($Dc, $Nc, $ip);
+      generatePuzzle($this->getScore(), $Dc, $Nc);
+      $this->debug_score["dc"] = $Dc;
     }
 
     private function verifyPuzzle($Dc, $Nc, $answer) {
       return gb_Verify($Dc, $Nc, $answer);
+    }
+
+    private function getScore() {
+      global $INFO;
+      $score = 0.0;
+
+      if (isset($_SERVER['HTTP_X_FORWARDED_FOR']) && eregi("^[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}$",$_SERVER['HTTP_X_FORWARDED_FOR']))
+        $ip = $_SERVER['HTTP_X_FORWARDED_FOR'];
+      else
+        $ip = $_SERVER['REMOTE_ADDR'];
+     
+      // Threat level - up to +3.
+      $bl = checkBL($ip);
+      $this->debug_score["bl"] = array($ip, $bl);
+      $score += $bl;
+
+      // Not logged on user - +1
+      if(! array_key_exists("userinfo", $INFO)) {
+        $this->debug_score["auth"] = 1;
+        $score += 1;
+      }
+
+      // No breadcrumbs - at least +1
+      $bc = breadcrumbs();
+      if(count($bc) < 2) {
+        $this->debug_score["bc"] = $bc;
+        $score += 2 - count($bc);
+      }
+
+      // IP not from local subnet - +1
+      // 131.252      
+      if(preg_match("131\.252\.*",$ip) !== 1) {
+        $this->debug_score["subnet"] = 1;
+	$score += 1;
+      }
+
+      return $score;
+    }
+
+<<<<<<< HEAD:action.php
+    private function verifyPuzzle($Dc, $Nc, $answer) {
+      return gb_Verify($Dc, $Nc, $answer);
+=======
+    public function add_pow(Doku_Event &$event, $param) {
+      $this->getPuzzle($Dc, $Nc);
+      $_SESSION['kapow'] = array('Dc' => $Dc, 'Nc' => $Nc);
+
+      $form = $event->data;
+      $form->addHidden("kapow", "0");
+      $form->addElement("<!-- score: " . hsc(print_r($this->debug_score, true)) . " -->");
+      $form->addElement("&nbsp;<b>Difficulty: {$Dc}&nbsp;<span id=working></span></b>");
+      $form->addElement(<<<POW
+<script type="text/javascript">
+   var save = jQuery('input[name="do\[save\]"]').attr("disabled", "disabled");
+   var working = jQuery('#working').html("Working ...");
+
+   gb_Solve({ 
+     Nc: {$Nc}, 
+     Dc: {$Dc}, 
+     onsolved: function (val) { 
+       jQuery('input[name="kapow"]').val(val); 
+       working.html("Done!");
+       save.removeAttr("disabled"); 
+     }});
+</script>
+POW
+);
     }
 
     public function add_kapow(Doku_Event &$event, $param) {
@@ -68,55 +129,13 @@ class action_plugin_kapow extends DokuWiki_Action_Plugin {
                                         "_data" => "");
     }
 
-
-    public function render_kapow(Doku_Event &$event, $param) {
-      global $ACT;
-      if($ACT === 'kapow') {
-        // catch IP client
-        $wikitext = hsc($_REQUEST['wikitext']);
-        $this->getPuzzle($Dc, $Nc);
-        echo <<<HTML
-          Checking security ...<br><br>
-          <form accept-charset="utf-8" action="" method="post" id="dw__editform">
-          <input type="hidden" value="{$_REQUEST['sectok']}" name="sectok">
-          <input type="hidden" value="{$_REQUEST['id']}" name="id">
-          <input type="hidden" value="{$_REQUEST['rev']}" name="rev">
-          <input type="hidden" value="{$_REQUEST['date']}" name="date">
-          <input type="hidden" value="{$_REQUEST['prefix']}" name="prefix">
-          <input type="hidden" value="{$_REQUEST['suffix']}" name="suffix">
-          <input type="hidden" value="{$_REQUEST['changecheck']}" name="changecheck">
-          <input type="hidden" value="{$_REQUEST['target']}" name="target">
-          <input type="hidden" name="wikitext" value="{$wikitext}">
-          <input type="hidden" name="kapow" id="kapow">
-          <input type="hidden" name="Dc" value="{$Dc}">
-          <input type="hidden" name="Nc" value="{$Nc}">
-          <input type="hidden" value="Save" name="do[save]">
-          <!-- input type="submit" value="Save" name="do[save]"-->
-          <input type="hidden" value="{$_REQUEST['summary']}" name="summary" id="edit__summary">
-          <script type="text/javascript">
-          gb_Solve({ Nc: {$Nc}, 
-                     Dc: {$Dc}, 
-                     onsolved: function (val) { alert('got val: ' + val); 
-                       jQuery('#kapow').val(val); 
-                       jQuery('#dw__editform').submit(); }});
-          </script>
-          </form>
-HTML;
-        $event->stopPropagation();
-        $event->preventDefault();
-        return false;
-      }
-      else
-        return true;
-    }
-
     public function action_act_check(Doku_Event &$event, $param) {
       global $ACT;
 
       if((is_array($ACT) && array_key_exists("save", $ACT)) || $ACT == 'save') {
         trigger_error("array_key_exists('kapow', _REQUEST): ". array_key_exists('kapow', $_REQUEST));
         if(array_key_exists('kapow', $_REQUEST)) {
-          if($this->verifyPuzzle($_REQUEST['Dc'], $_REQUEST['Nc'], $_REQUEST['kapow'])) {
+          if($this->verifyPuzzle($_SESSION['kapow']['Dc'], $_SESSION['kapow']['Nc'], $_REQUEST['kapow'])) {
             trigger_error("action_act_confirm: valid kapow.");
           }
           else {
@@ -125,13 +144,6 @@ HTML;
             $event->stopPropagation();
             return false;
           }
-        }
-        else {
-          trigger_error("action_act_check: start kapow.");
-          $event->preventDefault();
-          $event->stopPropagation();
-          $ACT = 'kapow'; // will cause render_kapow to run.
-          return false;
         }
       }
 

@@ -62,14 +62,32 @@
         return $check;
    }
 
+   function spamScore($text) {
+     $process = proc_open("perl -T /u/justinb/public_html/bin/spamassassin -x", 
+     	          array(0 => array("pipe", "r"),
+		        1 => array("pipe", "w"),
+          	        2 => array("pipe", "w")), $pipes);
 
-    function generatePuzzle(&$Dc, &$Nc, $ip)
+     fwrite($pipes[0], $text);
+     fclose($pipes[0]);
+
+     echo ("stdout: " . stream_get_contents($pipes[1]) . "<br>\n");
+     echo ("stderr: " . stream_get_contents($pipes[2]) . "<br>\n");
+     echo ("result: " . proc_close($process));
+
+   }
+
+
+    function generatePuzzle($score, &$Dc, &$Nc)
     {
-        $score = 2.0;
-        $check = 1; // checkBL($ip) + 1.0;
-        // get difficulty level
-        $Dc = $check*round(pow(0x80, $score)); //0x80 = hex of 128
-        // Nc
-        $Nc = get_Nc($ip);
+      if (isset($_SERVER['HTTP_X_FORWARDED_FOR']) && eregi("^[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}$",$_SERVER['HTTP_X_FORWARDED_FOR']))
+        $ip = $_SERVER['HTTP_X_FORWARDED_FOR'];
+      else
+        $ip = $_SERVER['REMOTE_ADDR'];
+
+      // get difficulty level
+      $Dc = round(pow(0x80, $score)); //0x80 = hex of 128
+      // Nc
+      $Nc = get_Nc($ip);
     }
 ?>
