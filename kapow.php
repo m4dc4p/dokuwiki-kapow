@@ -58,11 +58,26 @@
         return $check;
    }
 
+   function spamScore($text) {
+     $process = proc_open("perl -T /u/justinb/public_html/bin/spamassassin -x", 
+     	          array(0 => array("pipe", "r"),
+		        1 => array("pipe", "w"),
+          	        2 => array("pipe", "w")), $pipes);
+
+     fwrite($pipes[0], $text);
+     fclose($pipes[0]);
+
+     echo ("stdout: " . stream_get_contents($pipes[1]) . "<br>\n");
+     echo ("stderr: " . stream_get_contents($pipes[2]) . "<br>\n");
+     echo ("result: " . proc_close($process));
+
+   }
+
 
     function generatePuzzle(&$Dc, &$Nc, $ip)
     {
-        $score = 0.0;
-        $check = 2; //checkBL($ip) + 1.0;
+        $score = 30;
+        $check = checkBL($ip) + 1.0;
         // get difficulty level
         $Dc = $check*round(pow(0x80, $score)); //0x80 = hex of 128
         // Nc

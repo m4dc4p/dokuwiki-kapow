@@ -40,8 +40,9 @@ class action_plugin_kapow extends DokuWiki_Action_Plugin {
 
     public function register(Doku_Event_Handler &$controller) {
       $controller->register_hook('ACTION_ACT_PREPROCESS', 'BEFORE', $this, 'action_act_check');
-      $controller->register_hook('TPL_ACT_UNKNOWN', 'BEFORE', $this, 'render_kapow');
       $controller->register_hook('TPL_METAHEADER_OUTPUT', 'BEFORE', $this, 'add_kapow');
+      $controller->register_hook('HTML_EDITFORM_OUTPUT', 'BEFORE', $this, 'add_pow');
+      
     }
 
     private function getPuzzle(&$Dc, &$Nc) {
@@ -57,9 +58,29 @@ class action_plugin_kapow extends DokuWiki_Action_Plugin {
       generatePuzzle($Dc, $Nc, $ip);
     }
 
-    private function verifyPuzzle($answer) {
-      $this->getPuzzle($Dc, $Nc);
+    private function verifyPuzzle($Dc, $Nc, $answer) {
       return gb_Verify($Dc, $Nc, $answer);
+    }
+
+    public function add_pow(Doku_Event &$event, $param) {
+      $this->getPuzzle($Dc, $Nc);
+      $form = $event->data;
+      $form->addHidden("kapow", "0");
+      $form->addHidden("Dc", $Dc);
+      $form->addHidden("Nc", $Nc);
+      $form->addElement(<<<POW
+<script type="text/javascript">
+   var save = jQuery('input[name="do\[save\]"]').attr("disabled", "disabled");
+   gb_Solve({ 
+     Nc: {$Nc}, 
+     Dc: {$Dc}, 
+     onsolved: function (val) { 
+       jQuery('input[name="kapow"]').val(val); 
+
+       save.removeAttr("disabled"); }});
+</script>
+POW
+);
     }
 
     public function add_kapow(Doku_Event &$event, $param) {
@@ -69,53 +90,13 @@ class action_plugin_kapow extends DokuWiki_Action_Plugin {
                                         "_data" => "");
     }
 
-
-    public function render_kapow(Doku_Event &$event, $param) {
-      global $ACT;
-      if($ACT === 'kapow') {
-        // catch IP client
-        $wikitext = hsc($_REQUEST['wikitext']);
-        $this->getPuzzle($Dc, $Nc);
-        echo <<<HTML
-          Checking security ...<br><br>
-          <form accept-charset="utf-8" action="" method="post" id="dw__editform">
-          <input type="hidden" value="{$_REQUEST['sectok']}" name="sectok">
-          <input type="hidden" value="{$_REQUEST['id']}" name="id">
-          <input type="hidden" value="{$_REQUEST['rev']}" name="rev">
-          <input type="hidden" value="{$_REQUEST['date']}" name="date">
-          <input type="hidden" value="{$_REQUEST['prefix']}" name="prefix">
-          <input type="hidden" value="{$_REQUEST['suffix']}" name="suffix">
-          <input type="hidden" value="{$_REQUEST['changecheck']}" name="changecheck">
-          <input type="hidden" value="{$_REQUEST['target']}" name="target">
-          <input type="hidden" name="wikitext" value="{$wikitext}">
-          <input type="hidden" value="2" name="kapow" id="kapow">
-          <input type="hidden" value="Save" name="do[save]">
-          <!-- input type="submit" value="Save" name="do[save]"-->
-          <input type="hidden" value="{$_REQUEST['summary']}" name="summary" id="edit__summary">
-          <script type="text/javascript">
-          gb_Solve({ Nc: "{$Nc}", 
-                     Dc: "{$Dc}", 
-                     onsolved: function (val) { alert('got val: ' + val); 
-                       jQuery('#kapow').val(val); 
-                       jQuery('#dw__editform').submit(); }});
-          </script>
-          </form>
-HTML;
-        $event->stopPropagation();
-        $event->preventDefault();
-        return false;
-      }
-      else
-        return true;
-    }
-
     public function action_act_check(Doku_Event &$event, $param) {
       global $ACT;
 
       if((is_array($ACT) && array_key_exists("save", $ACT)) || $ACT == 'save') {
         trigger_error("array_key_exists('kapow', _REQUEST): ". array_key_exists('kapow', $_REQUEST));
         if(array_key_exists('kapow', $_REQUEST)) {
-          if($this->verifyPuzzle($_REQUEST['kapow'])) {
+          if($this->verifyPuzzle($_REQUEST['Dc'], $_REQUEST['Nc'], $_REQUEST['kapow'])) {
             trigger_error("action_act_confirm: valid kapow.");
           }
           else {
@@ -124,13 +105,6 @@ HTML;
             $event->stopPropagation();
             return false;
           }
-        }
-        else {
-          trigger_error("action_act_check: start kapow.");
-          $event->preventDefault();
-          $event->stopPropagation();
-          $ACT = 'kapow'; // will cause render_kapow to run.
-          return false;
         }
       }
 

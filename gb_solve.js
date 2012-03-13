@@ -199,10 +199,6 @@ function gb_Solve(tag) {
    }
    if (tag.A == undefined) tag.A = 0;
 
-   if (tag.Dc > 100) { // if its non-easy
-      gb_ShowSplash(tag);
-   }
-
    // Create the initial input. // is there any rule?
    if (tag.Dc > 1) { // get Dc from server
       var input = Array(16);
