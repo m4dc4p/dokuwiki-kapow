@@ -92,10 +92,6 @@ class action_plugin_kapow extends DokuWiki_Action_Plugin {
       return $score;
     }
 
-<<<<<<< HEAD:action.php
-    private function verifyPuzzle($Dc, $Nc, $answer) {
-      return gb_Verify($Dc, $Nc, $answer);
-=======
     public function add_pow(Doku_Event &$event, $param) {
       $this->getPuzzle($Dc, $Nc);
       $_SESSION['kapow'] = array('Dc' => $Dc, 'Nc' => $Nc);
